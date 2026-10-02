@@ -4,7 +4,7 @@
 // @author       Giorgio Dalessandro
 // @copyright    Food and Agriculture Organization of the United Nations (FAO)
 // @license      GPL-3.0-or-later
-// @version      1.8.0
+// @version      1.8.1
 // @description  Shows the per-row "More commands" menu items as inline buttons in the object grids of a solution.
 // @match        https://make.powerapps.com/*
 // @grant        none
@@ -44,7 +44,7 @@
     {
       key: 'FlowRuns',
       label: 'Runs',
-      title: 'Open all runs in Power Automate (Ctrl/Cmd+click: new tab)',
+      title: 'Open all runs in Power Automate (new tab)',
       url: flowRunsUrl,
     },
   ];
@@ -232,7 +232,7 @@
         event.preventDefault();
         event.stopPropagation();
         if (action.url) {
-          openUrl(action.url(row), event);
+          openInNewTab(action.url(row));
           return;
         }
         if (
@@ -270,16 +270,12 @@
     return `${POWER_AUTOMATE_ORIGIN}/environments/${environmentId}/solutions/${solutionId}/flows/${flowId}/runs`;
   }
 
-  function openUrl(url, event) {
+  function openInNewTab(url) {
     if (!url) {
       console.warn('[ppqa] No URL for this row');
       return;
     }
-    if (event.ctrlKey || event.metaKey) {
-      window.open(url, '_blank', 'noopener');
-    } else {
-      window.location.assign(url);
-    }
+    window.open(url, '_blank', 'noopener');
   }
 
   // Returns null when the grid has no such column (e.g. Recent items), so no rule is applied there.

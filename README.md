@@ -49,10 +49,10 @@ Each button opens the row's native "More commands" menu, navigates to the item b
 driven programmatically. If the native item is disabled for that object, the button is greyed out with
 a "not available for this object" tooltip and nothing is executed.
 
-**Runs** does not use the menu: it navigates to
+**Runs** does not use the menu: it opens
 `https://make.powerautomate.com/environments/{environment}/solutions/{solution}/flows/{flowId}/runs`, taking the
 environment and solution ids from the current URL and the flow id (`msdyn_workflowidunique`) from the grid row.
-Ctrl/Cmd+click opens it in a new tab.
+The page opens in a new tab.
 
 **Remove** and **Turn on / Turn off** change the environment: use them deliberately.
 
