@@ -39,6 +39,7 @@ not apply. Environments whose id is not a plain GUID (e.g. `Default-{GUID}`) are
 | Required | Add required objects | Advanced | Hidden when the row is managed (`Managed` = Yes) |
 | Remove | Remove active customizations | Advanced | Disabled unless `Customized` = Yes |
 | Turn off / Turn on | Turn off / Turn on | Top level | Label follows the `Status` column (On / Off); hidden otherwise, e.g. for non-flow objects |
+| Runs | (link) | Not in the menu | Cloud flows only; opens the flow's "All runs" page in Power Automate |
 
 In grids that lack the `Managed` or `Customized` column (e.g. Recent items on the Overview page), the
 Required and Remove buttons stay available and the native menu decides whether the command is enabled.
@@ -47,6 +48,11 @@ Each button opens the row's native "More commands" menu, navigates to the item b
 (opening plain submenus such as "Advanced" when needed) and clicks it. The menu is hidden while it is
 driven programmatically. If the native item is disabled for that object, the button is greyed out with
 a "not available for this object" tooltip and nothing is executed.
+
+**Runs** does not use the menu: it navigates to
+`https://make.powerautomate.com/environments/{environment}/solutions/{solution}/flows/{flowId}/runs`, taking the
+environment and solution ids from the current URL and the flow id (`msdyn_workflowidunique`) from the grid row.
+Ctrl/Cmd+click opens it in a new tab.
 
 **Remove** and **Turn on / Turn off** change the environment: use them deliberately.
 
@@ -88,6 +94,8 @@ Open the browser console and filter by `[ppqa]`:
 
 - Relies on the current Fluent UI DOM of make.powerapps.com (`data-test-key`, `data-automation-key`,
   `.ms-DetailsRow-fields`); a Microsoft UI update may require adjusting the selectors.
+- The flow id for **Runs** is read from the grid row's React instance, since it is not exposed in the
+  DOM; this requires the script to run in the page context (`@grant none`).
 - Column rules compare English cell text (`Yes`, `On`, `Off`).
 
 ## License

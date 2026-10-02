@@ -4,7 +4,7 @@
 // @author       Giorgio Dalessandro
 // @copyright    Food and Agriculture Organization of the United Nations (FAO)
 // @license      GPL-3.0-or-later
-// @version      1.7.1
+// @version      1.8.0
 // @description  Shows the per-row "More commands" menu items as inline buttons in the object grids of a solution.
 // @match        https://make.powerapps.com/*
 // @grant        none
@@ -19,6 +19,7 @@
   // enabledIfYes: the button is disabled unless the column shows YES_TEXT.
   // hiddenIfYes: the button is hidden when the column shows YES_TEXT.
   // labelByColumn: the label follows the column value; hidden when the value has no label.
+  // url: link button instead of a menu command; hidden when it returns null for the row.
   const ACTIONS = [
     { key: 'ShowDependencies', label: 'Deps', title: 'Show dependencies' },
     { key: 'SeeSolutionLayers', label: 'Layers', title: 'See solution layers' },
@@ -40,7 +41,15 @@
       title: 'Turn the flow on or off',
       labelByColumn: { column: 'status', labels: { On: 'Turn off', Off: 'Turn on' } },
     },
+    {
+      key: 'FlowRuns',
+      label: 'Runs',
+      title: 'Open all runs in Power Automate (Ctrl/Cmd+click: new tab)',
+      url: flowRunsUrl,
+    },
   ];
+  const POWER_AUTOMATE_ORIGIN = 'https://make.powerautomate.com';
+  const MODERN_FLOW_CATEGORY = 5;
   const YES_TEXT = 'Yes';
   // Column keys: data-item-key on header cells, data-automation-key on row cells.
   const HIDDEN_COLUMNS = ['uniqueName', 'owner', 'lastModificationDate', 'isManaged'];
@@ -52,8 +61,9 @@
   const BUSY_CLASS = 'ppqa-busy';
   const ACTIVE_CLASS = 'ppqa-active';
   // make.powerapps.com is a SPA: @match only fires on full loads, so the target page is checked at runtime.
+  // Capture groups: environment id, solution id.
   const TARGET_PATH =
-    /^\/environments\/[0-9a-f-]{36}\/solutions\/[0-9a-f-]{36}(\/|$)/i;
+    /^\/environments\/([0-9a-f-]{36})\/solutions\/([0-9a-f-]{36})(\/|$)/i;
 
   const ROW_SELECTOR = '[role="row"]';
   const MENU_BUTTON_SELECTOR =
@@ -221,6 +231,10 @@
         // Prevent the DetailsList from treating the click as row selection/navigation.
         event.preventDefault();
         event.stopPropagation();
+        if (action.url) {
+          openUrl(action.url(row), event);
+          return;
+        }
         if (
           button.classList.contains('ppqa-unavailable') ||
           button.getAttribute('aria-disabled') === 'true'
@@ -232,6 +246,40 @@
       toolbar.appendChild(button);
     }
     return toolbar;
+  }
+
+  // The grid exposes no ids in the DOM, so the row item is read from the React instance of the row.
+  function getRowItem(row) {
+    const key = Object.keys(row).find(
+      (k) => k.startsWith('__reactInternalInstance$') || k.startsWith('__reactFiber$')
+    );
+    for (let fiber = key && row[key]; fiber; fiber = fiber.return) {
+      const item = fiber.memoizedProps && fiber.memoizedProps.item;
+      if (item) return item;
+    }
+    return null;
+  }
+
+  function flowRunsUrl(row) {
+    const match = TARGET_PATH.exec(location.pathname);
+    const component = getRowItem(row)?.component;
+    if (!match || component?.msdyn_workflowcategory !== MODERN_FLOW_CATEGORY) return null;
+    const flowId = component.msdyn_workflowidunique;
+    if (!flowId) return null;
+    const [, environmentId, solutionId] = match;
+    return `${POWER_AUTOMATE_ORIGIN}/environments/${environmentId}/solutions/${solutionId}/flows/${flowId}/runs`;
+  }
+
+  function openUrl(url, event) {
+    if (!url) {
+      console.warn('[ppqa] No URL for this row');
+      return;
+    }
+    if (event.ctrlKey || event.metaKey) {
+      window.open(url, '_blank', 'noopener');
+    } else {
+      window.location.assign(url);
+    }
   }
 
   // Returns null when the grid has no such column (e.g. Recent items), so no rule is applied there.
@@ -258,6 +306,7 @@
       if (action.hiddenIfYes) {
         button.hidden = columnIsYes(row, action.hiddenIfYes) === true;
       }
+      if (action.url) button.hidden = !action.url(row);
       if (action.labelByColumn) applyColumnLabel(row, button, action.labelByColumn);
       if (action.enabledIfYes) {
         const allowed = columnIsYes(row, action.enabledIfYes) !== false;
