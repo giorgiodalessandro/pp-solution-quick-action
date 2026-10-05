@@ -18,22 +18,22 @@
   // Row-column rules (column keys, compared against YES_TEXT):
   // enabledIfYes: the button is disabled unless the column shows YES_TEXT.
   // hiddenIfYes: the button is hidden when the column shows YES_TEXT.
+  // visibleIfYes: the button is hidden unless the column shows YES_TEXT.
   // labelByColumn: the label follows the column value; hidden when the value has no label.
   // url: link button instead of a menu command; hidden when it returns null for the row.
   const ACTIONS = [
-    { key: 'ShowDependencies', label: 'Deps', title: 'Show dependencies' },
-    { key: 'SeeSolutionLayers', label: 'Layers', title: 'See solution layers' },
     {
-      key: 'AddRequiredComponents',
-      label: 'Required',
-      title: 'Add required objects',
-      hiddenIfYes: 'isManaged',
+      key: 'FlowRuns',
+      label: 'Runs',
+      title: 'Open all runs in Power Automate (new tab)',
+      url: flowRunsUrl,
     },
     {
       key: 'RemoveActiveCustomizations',
       label: 'Remove',
       title: 'Remove active customizations',
       enabledIfYes: 'isCustomized',
+      visibleIfYes: 'isManaged',
     },
     {
       key: 'ToggleFlow',
@@ -42,11 +42,14 @@
       labelByColumn: { column: 'status', labels: { On: 'Turn off', Off: 'Turn on' } },
     },
     {
-      key: 'FlowRuns',
-      label: 'Runs',
-      title: 'Open all runs in Power Automate (new tab)',
-      url: flowRunsUrl,
+      key: 'AddRequiredComponents',
+      label: 'Required',
+      title: 'Add required objects',
+      hiddenIfYes: 'isManaged',
     },
+    { key: 'ShowDependencies', label: 'Deps', title: 'Show dependencies' },
+    { key: 'SeeSolutionLayers', label: 'Layers', title: 'See solution layers' },
+
   ];
   const POWER_AUTOMATE_ORIGIN = 'https://make.powerautomate.com';
   const MODERN_FLOW_CATEGORY = 5;
@@ -161,7 +164,7 @@
   // Some commands live in a submenu (e.g. "Advanced"), whose items only exist once it is opened.
   async function findItemInSubmenus(key) {
     const opened = new Set();
-    for (;;) {
+    for (; ;) {
       const trigger = [...document.querySelectorAll(MENU_ITEM_SELECTOR)].find(
         (el) => isSubmenuTrigger(el) && !opened.has(el)
       );
@@ -301,6 +304,9 @@
       const button = toolbar.querySelector(`[data-ppqa-key="${action.key}"]`);
       if (action.hiddenIfYes) {
         button.hidden = columnIsYes(row, action.hiddenIfYes) === true;
+      }
+      if (action.visibleIfYes) {
+        button.hidden = columnIsYes(row, action.visibleIfYes) === false;
       }
       if (action.url) button.hidden = !action.url(row);
       if (action.labelByColumn) applyColumnLabel(row, button, action.labelByColumn);
